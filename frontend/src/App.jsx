@@ -1,80 +1,76 @@
-import React, { useEffect } from 'react'
+import React from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
-import { io } from 'socket.io-client'
-import { useAuthStore } from './store/authStore'
-
-// Components
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { ToastContainer } from 'react-toastify'
+import 'react-toastify/dist/ReactToastify.css'
+import Layout from './components/Layout'
 import LoginPage from './pages/LoginPage'
 import SignupPage from './pages/SignupPage'
 import Dashboard from './pages/Dashboard'
 import CalendarPage from './pages/CalendarPage'
 import MeetingsPage from './pages/MeetingsPage'
 import SettingsPage from './pages/SettingsPage'
-import Layout from './components/Layout'
+import { useAuthStore } from './store/authStore'
+import './App.css'
 
-// Socket connection
-let socket = null
+// Create a client
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+})
+
+// Protected Route Component
+const ProtectedRoute = ({ children }) => {
+  const { isLoggedIn } = useAuthStore()
+  
+  console.log('ProtectedRoute - isLoggedIn:', isLoggedIn)
+  
+  if (!isLoggedIn) {
+    console.log('User not logged in, redirecting to login')
+    return <Navigate to="/login" replace />
+  }
+  
+  console.log('User is logged in, rendering protected content')
+  return children
+}
 
 function App() {
-  const { isLoggedIn, user } = useAuthStore()
-
-  useEffect(() => {
-    // Initialize socket connection when user is logged in
-    if (isLoggedIn() && user) {
-      socket = io(import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000')
-      
-      socket.on('connect', () => {
-        console.log('Connected to server')
-        socket.emit('join-room', user.id)
-      })
-
-      socket.on('disconnect', () => {
-        console.log('Disconnected from server')
-      })
-
-      // Store socket in window for global access
-      window.socket = socket
-
-      return () => {
-        if (socket) {
-          socket.disconnect()
-          window.socket = null
-        }
-      }
-    }
-  }, [isLoggedIn(), user])
-
   return (
-    <Router>
-      <div className="min-h-screen bg-background">
-        <Routes>
-          {/* Public routes */}
-          <Route 
-            path="/login" 
-            element={!isLoggedIn() ? <LoginPage /> : <Navigate to="/dashboard" />} 
-          />
-          <Route 
-            path="/signup" 
-            element={!isLoggedIn() ? <SignupPage /> : <Navigate to="/dashboard" />} 
-          />
-          
-          {/* Protected routes */}
-          <Route 
-            path="/" 
-            element={isLoggedIn() ? <Layout /> : <Navigate to="/login" />}
-          >
-            <Route index element={<Navigate to="/dashboard" />} />
-            <Route path="dashboard" element={<Dashboard />} />
-            <Route path="calendar" element={<CalendarPage />} />
-            <Route path="meetings" element={<MeetingsPage />} />
-            <Route path="settings" element={<SettingsPage />} />
-          </Route>
-          
-          {/* Catch all route */}
-          <Route path="*" element={<Navigate to={isLoggedIn() ? "/dashboard" : "/login"} />} />
-        </Routes>
-      </div>
-    </Router>
+    <QueryClientProvider client={queryClient}>
+      <Router>
+        <div className="App">
+          <Routes>
+            {/* Public routes */}
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/signup" element={<SignupPage />} />
+            
+            {/* Protected routes with Layout */}
+            <Route 
+              path="/" 
+              element={
+                <ProtectedRoute>
+                  <Layout />
+                </ProtectedRoute>
+              }
+            >
+              <Route index element={<Navigate to="/dashboard" replace />} />
+              <Route path="dashboard" element={<Dashboard />} />
+              <Route path="calendar" element={<CalendarPage />} />
+              <Route path="meetings" element={<MeetingsPage />} />
+              <Route path="settings" element={<SettingsPage />} />
+            </Route>
+            
+            {/* Catch all route */}
+            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          </Routes>
+          <ToastContainer position="top-right" />
+        </div>
+      </Router>
+    </QueryClientProvider>
   )
 }
 

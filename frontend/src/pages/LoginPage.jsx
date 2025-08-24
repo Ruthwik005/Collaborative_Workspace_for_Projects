@@ -5,7 +5,7 @@ import { Button } from '../components/ui/button'
 import { Input } from '../components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card'
 import { useAuthStore } from '../store/authStore'
-import apiService from '../services/api'
+import { api } from '../services/api'
 
 const LoginPage = () => {
   const [email, setEmail] = useState('')
@@ -16,7 +16,7 @@ const LoginPage = () => {
   const { login } = useAuthStore()
 
   const loginMutation = useMutation({
-    mutationFn: (credentials) => apiService.login(credentials),
+    mutationFn: (credentials) => api.login(credentials),
     onSuccess: (data) => {
       login(data.user, data.token)
       navigate('/dashboard')

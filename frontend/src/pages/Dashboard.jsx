@@ -4,28 +4,41 @@ import { DndContext, DragOverlay, closestCenter } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { Button } from '../components/ui/button'
 import { Plus } from 'lucide-react'
-import apiService from '../services/api'
+import { api } from '../services/api'
+import { useAuthStore } from '../store/authStore'
 import TaskColumn from '../components/TaskColumn'
 import TaskCard from '../components/TaskCard'
 import TaskDialog from '../components/TaskDialog'
 import NewTaskDialog from '../components/NewTaskDialog'
+import ProgressUpdateDialog from '../components/ProgressUpdateDialog'
+import { useSocket } from '../hooks/useSocket'
 
 const Dashboard = () => {
   const [activeId, setActiveId] = useState(null)
   const [activeTask, setActiveTask] = useState(null)
   const [selectedTask, setSelectedTask] = useState(null)
   const [showNewTaskDialog, setShowNewTaskDialog] = useState(false)
+  const [showProgressDialog, setShowProgressDialog] = useState(false)
+  const [progressTask, setProgressTask] = useState(null)
   const queryClient = useQueryClient()
+  const { socket, isConnected } = useSocket()
+  const { isLoggedIn, user } = useAuthStore()
 
-  // Fetch tasks
-  const { data: tasks = [], isLoading } = useQuery({
+  console.log('Dashboard component rendering, isLoggedIn:', isLoggedIn, 'user:', user)
+
+  // Fetch tasks only if user is logged in
+  const { data: tasks = [], isLoading, error } = useQuery({
     queryKey: ['tasks'],
-    queryFn: apiService.getTasks,
+    queryFn: api.getTasks,
+    enabled: isLoggedIn, // Only run query if user is logged in
+    retry: false, // Don't retry if it fails
   })
+
+  console.log('Dashboard tasks:', tasks, 'isLoading:', isLoading, 'error:', error)
 
   // Update task mutation
   const updateTaskMutation = useMutation({
-    mutationFn: ({ taskId, updates }) => apiService.updateTask(taskId, updates),
+    mutationFn: ({ taskId, updates }) => api.updateTask(taskId, updates),
     onSuccess: () => {
       queryClient.invalidateQueries(['tasks'])
     }
@@ -33,25 +46,26 @@ const Dashboard = () => {
 
   // Real-time updates
   useEffect(() => {
-    if (window.socket) {
+    if (socket && isConnected) {
       const handleTaskUpdate = (data) => {
+        console.log('Task update received:', data)
         queryClient.invalidateQueries(['tasks'])
       }
 
-      window.socket.on('task-updated', handleTaskUpdate)
-      window.socket.on('tasks-imported', handleTaskUpdate)
+      socket.on('task-updated', handleTaskUpdate)
+      socket.on('tasks-imported', handleTaskUpdate)
 
       return () => {
-        window.socket?.off('task-updated', handleTaskUpdate)
-        window.socket?.off('tasks-imported', handleTaskUpdate)
+        socket.off('task-updated', handleTaskUpdate)
+        socket.off('tasks-imported', handleTaskUpdate)
       }
     }
-  }, [queryClient])
+  }, [socket, isConnected, queryClient])
 
   // Organize tasks by status
   const tasksByStatus = {
     todo: tasks.filter(task => task.status === 'todo'),
-    inprogress: tasks.filter(task => task.status === 'inprogress'),
+    'in-progress': tasks.filter(task => task.status === 'in-progress'),
     done: tasks.filter(task => task.status === 'done')
   }
 
@@ -85,6 +99,48 @@ const Dashboard = () => {
     setSelectedTask(task)
   }
 
+  const handleAddProgress = (task) => {
+    setProgressTask(task)
+    setShowProgressDialog(true)
+  }
+
+  const handleCloseProgressDialog = () => {
+    setShowProgressDialog(false)
+    setProgressTask(null)
+  }
+
+  const handleStatusChange = (task, newStatus) => {
+    updateTaskMutation.mutate({
+      taskId: task._id,
+      updates: { status: newStatus }
+    })
+  }
+
+  if (!isLoggedIn) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Please Log In</h2>
+          <p className="text-gray-600">You need to be logged in to view the dashboard.</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold text-red-600 mb-2">Error Loading Tasks</h2>
+          <p className="text-gray-600 mb-4">{error.message}</p>
+          <Button onClick={() => queryClient.invalidateQueries(['tasks'])}>
+            Retry
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -100,11 +156,39 @@ const Dashboard = () => {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Task Board</h1>
           <p className="text-gray-600">Manage your team's tasks in real-time</p>
+          {socket && (
+            <p className={`text-sm ${isConnected ? 'text-green-600' : 'text-red-600'}`}>
+              {isConnected ? '🟢 Connected' : '🔴 Disconnected'} to real-time updates
+            </p>
+          )}
         </div>
-        <Button onClick={() => setShowNewTaskDialog(true)}>
+        <Button 
+          onClick={() => setShowNewTaskDialog(true)}
+          disabled={!isLoggedIn}
+          className={!isLoggedIn ? 'opacity-50 cursor-not-allowed' : ''}
+        >
           <Plus className="w-4 h-4 mr-2" />
-          New Task
+          {isLoggedIn ? 'New Task' : 'Login to Create Task'}
         </Button>
+      </div>
+
+      {/* Instructions */}
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div className="flex items-start gap-3">
+          <div className="text-blue-600 mt-0.5">
+            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+            </svg>
+          </div>
+          <div className="text-sm text-blue-800">
+            <p className="font-medium mb-1">How to move tasks:</p>
+            <ul className="space-y-1 text-xs">
+              <li>• <strong>Drag & Drop:</strong> Click and drag any task card to another column</li>
+              <li>• <strong>Status Dropdown:</strong> Use the "Status" button on each task card</li>
+              <li>• <strong>Progress Updates:</strong> Click "Progress" to add updates without changing status</li>
+            </ul>
+          </div>
+        </div>
       </div>
 
       {/* Task Board */}
@@ -119,18 +203,24 @@ const Dashboard = () => {
             status="todo"
             tasks={tasksByStatus.todo}
             onTaskClick={handleTaskClick}
+            onAddProgress={handleAddProgress}
+            onStatusChange={handleStatusChange}
           />
           <TaskColumn
             title="In Progress"
-            status="inprogress"
-            tasks={tasksByStatus.inprogress}
+            status="in-progress"
+            tasks={tasksByStatus['in-progress']}
             onTaskClick={handleTaskClick}
+            onAddProgress={handleAddProgress}
+            onStatusChange={handleStatusChange}
           />
           <TaskColumn
             title="Done"
             status="done"
             tasks={tasksByStatus.done}
             onTaskClick={handleTaskClick}
+            onAddProgress={handleAddProgress}
+            onStatusChange={handleStatusChange}
           />
         </div>
 
@@ -154,6 +244,13 @@ const Dashboard = () => {
       <NewTaskDialog
         open={showNewTaskDialog}
         onClose={() => setShowNewTaskDialog(false)}
+      />
+
+      {/* Progress Update Dialog */}
+      <ProgressUpdateDialog
+        open={showProgressDialog}
+        onClose={handleCloseProgressDialog}
+        task={progressTask}
       />
     </div>
   )

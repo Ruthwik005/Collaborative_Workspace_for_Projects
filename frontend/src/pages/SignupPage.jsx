@@ -4,7 +4,7 @@ import { useMutation } from '@tanstack/react-query'
 import { Button } from '../components/ui/button'
 import { Input } from '../components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card'
-import apiService from '../services/api'
+import { api } from '../services/api'
 
 const SignupPage = () => {
   const [formData, setFormData] = useState({
@@ -19,7 +19,7 @@ const SignupPage = () => {
   const navigate = useNavigate()
 
   const signupMutation = useMutation({
-    mutationFn: (userData) => apiService.signup(userData),
+    mutationFn: (userData) => api.signup(userData),
     onSuccess: (data) => {
       setSuccess(data.message)
       setError('')
@@ -100,7 +100,7 @@ const SignupPage = () => {
               )}
               
               <div>
-                <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="username" className="text-sm font-medium text-gray-700 mb-1">
                   Username
                 </label>
                 <Input
@@ -115,7 +115,7 @@ const SignupPage = () => {
               </div>
               
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="email" className="text-sm font-medium text-gray-700 mb-1">
                   Email address
                 </label>
                 <Input
@@ -130,7 +130,7 @@ const SignupPage = () => {
               </div>
               
               <div>
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="password" className="text-sm font-medium text-gray-700 mb-1">
                   Password
                 </label>
                 <Input
@@ -145,7 +145,7 @@ const SignupPage = () => {
               </div>
               
               <div>
-                <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="confirmPassword" className="text-sm font-medium text-gray-700 mb-1">
                   Confirm Password
                 </label>
                 <Input

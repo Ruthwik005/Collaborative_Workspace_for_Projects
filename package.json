@@ -1,7 +1,7 @@
 {
   "name": "synergy-sphere",
   "version": "1.0.0",
-  "description": "A fully functional, production-ready collaborative workspace web application",
+  "description": "A fully functional, production-ready collaborative workspace web application with GitHub integration, Google Calendar/Docs sync, automated timesheets, and real-time notifications",
   "main": "index.js",
   "scripts": {
     "install-all": "npm run install-backend && npm run install-frontend",
@@ -18,7 +18,9 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "lint": "npm run lint-backend && npm run lint-frontend",
     "lint-backend": "cd backend && npm run lint",
-    "lint-frontend": "cd frontend && npm run lint"
+    "lint-frontend": "cd frontend && npm run lint",
+    "generate-timesheet": "cd backend && npm run generate-timesheet",
+    "setup-integrations": "echo \"Setting up GitHub and Google integrations...\" && echo \"1. Add OAuth credentials to backend/.env\" && echo \"2. Configure webhook URLs in GitHub\" && echo \"3. Set up Google Cloud Console project\""
   },
   "keywords": [
     "collaboration",
@@ -28,7 +30,14 @@
     "react",
     "nodejs",
     "mongodb",
-    "socketio"
+    "socketio",
+    "github-integration",
+    "google-calendar",
+    "google-docs",
+    "automated-timesheets",
+    "real-time-notifications",
+    "kanban-board",
+    "project-management"
   ],
   "author": "SynergySphere Team",
   "license": "MIT",

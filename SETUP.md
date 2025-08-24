@@ -22,7 +22,7 @@
    ```bash
    npm run dev
    ```
-   This starts both backend (port 5000) and frontend (port 3000) concurrently.
+   This starts both backend (port 5002) and frontend (port 3000) concurrently.
 
 ## Individual Commands
 

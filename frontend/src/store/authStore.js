@@ -33,7 +33,10 @@ export const useAuthStore = create(
 
       getToken: () => get().token,
       getUser: () => get().user,
-      isLoggedIn: () => get().isAuthenticated && get().token,
+      isLoggedIn: () => {
+        const state = get()
+        return state.isAuthenticated && state.token && state.user
+      },
     }),
     {
       name: 'auth-storage',

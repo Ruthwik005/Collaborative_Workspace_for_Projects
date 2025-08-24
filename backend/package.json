@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "generate-timesheet": "node -e \"import('./src/utils/timesheetGenerator.js').then(m => m.generateWeeklyTimesheet()).then(console.log).catch(console.error)\""
   },
   "keywords": [
     "collaboration",

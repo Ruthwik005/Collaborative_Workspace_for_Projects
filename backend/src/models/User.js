@@ -26,7 +26,7 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: null
   },
-  // GitHub integration
+  // GitHub integration (Phase 2)
   githubId: {
     type: String,
     default: null
@@ -39,7 +39,15 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: null
   },
-  // Google integration
+  githubRepoOwner: {
+    type: String,
+    default: null
+  },
+  githubRepoName: {
+    type: String,
+    default: null
+  },
+  // Google integration (Phase 2)
   googleId: {
     type: String,
     default: null
@@ -52,6 +60,18 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: null
   },
+  googleEmail: {
+    type: String,
+    default: null
+  },
+  googleName: {
+    type: String,
+    default: null
+  },
+  googlePicture: {
+    type: String,
+    default: null
+  },
   // User preferences
   isActive: {
     type: Boolean,
@@ -60,6 +80,15 @@ const userSchema = new mongoose.Schema({
   lastLogin: {
     type: Date,
     default: Date.now
+  },
+  // Notification preferences (Phase 3)
+  notificationPreferences: {
+    emailNotifications: { type: Boolean, default: true },
+    pushNotifications: { type: Boolean, default: true },
+    weeklyReports: { type: Boolean, default: true },
+    dailyReminders: { type: Boolean, default: true },
+    meetingReminders: { type: Boolean, default: true },
+    taskUpdates: { type: Boolean, default: true }
   }
 }, {
   timestamps: true
@@ -91,6 +120,26 @@ userSchema.methods.toJSON = function() {
   delete userObject.googleAccessToken
   delete userObject.googleRefreshToken
   return userObject
+}
+
+// Virtual for integration status
+userSchema.virtual('integrations').get(function() {
+  return {
+    github: {
+      connected: !!this.githubAccessToken,
+      repo: this.githubRepoUrl ? `${this.githubRepoOwner}/${this.githubRepoName}` : null
+    },
+    google: {
+      connected: !!this.googleAccessToken,
+      email: this.googleEmail,
+      name: this.googleName
+    }
+  }
+})
+
+// Method to check if user has any integrations
+userSchema.methods.hasIntegrations = function() {
+  return !!(this.githubAccessToken || this.googleAccessToken)
 }
 
 const User = mongoose.model('User', userSchema)

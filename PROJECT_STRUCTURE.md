@@ -201,7 +201,7 @@ backend/
 
 4. **Access Application**:
    - Frontend: http://localhost:3000
-   - Backend API: http://localhost:5000
+   - Backend API: http://localhost:5002
 
 ## 🔄 Git Workflow
 

@@ -4,14 +4,14 @@ import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import TaskCard from './TaskCard'
 import { Card, CardHeader, CardTitle, CardContent } from './ui/card'
 
-const TaskColumn = ({ title, status, tasks, onTaskClick }) => {
+const TaskColumn = ({ title, status, tasks, onTaskClick, onAddProgress, onStatusChange }) => {
   const { isOver, setNodeRef } = useDroppable({
     id: status,
   })
 
   const statusColors = {
     todo: 'border-l-blue-500',
-    inprogress: 'border-l-yellow-500',
+    'in-progress': 'border-l-yellow-500',
     done: 'border-l-green-500'
   }
 
@@ -41,6 +41,8 @@ const TaskColumn = ({ title, status, tasks, onTaskClick }) => {
                 key={task._id}
                 task={task}
                 onClick={() => onTaskClick(task)}
+                onAddProgress={onAddProgress}
+                onStatusChange={onStatusChange}
               />
             ))}
           </SortableContext>
@@ -50,6 +52,12 @@ const TaskColumn = ({ title, status, tasks, onTaskClick }) => {
               <p className="text-sm">No tasks in this column</p>
               {status === 'todo' && (
                 <p className="text-xs mt-1">Create a new task to get started</p>
+              )}
+              {status === 'in-progress' && (
+                <p className="text-xs mt-1">Drag tasks here or use the Status dropdown</p>
+              )}
+              {status === 'done' && (
+                <p className="text-xs mt-1">Completed tasks will appear here</p>
               )}
             </div>
           )}
